@@ -8,6 +8,9 @@
 #include <QLineSeries>
 #include <QDate>
 #include <QDebug>
+#include <QStandardPaths>
+#include <QDir>
+#include <QSettings>
 
 using namespace QtCharts;
 
@@ -16,7 +19,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-   // ui->groupBox_2->layout()->setAlignment(ui->calendarView, Qt::AlignHCenter);
+    // ui->groupBox_2->layout()->setAlignment(ui->calendarView, Qt::AlignHCenter);
     QChart *chart;
     QChartView *chartView;
 
@@ -24,57 +27,84 @@ MainWindow::MainWindow(QWidget *parent)
 
     QLineSeries *series = new QLineSeries();
     series->append(0, 6);
-        series->append(2, 4);
-        series->append(3, 8);
-        series->append(7, 4);
-        series->append(10, 5);
-        *series << QPointF(11, 1) << QPointF(13, 3) << QPointF(17, 6) << QPointF(18, 3) << QPointF(20, 2);
+    series->append(2, 4);
+    series->append(3, 8);
+    series->append(7, 4);
+    series->append(10, 5);
+    *series << QPointF(11, 1) << QPointF(13, 3) << QPointF(17, 6) << QPointF(18, 3) << QPointF(20, 2);
 
-        chart->legend()->hide();
-            chart->addSeries(series);
-            chart->createDefaultAxes();
-            chart->setTitle("Simple line chart example");
+    chart->legend()->hide();
+    chart->addSeries(series);
+    chart->createDefaultAxes();
+    chart->setTitle("Simple line chart example");
     chartView = new QChartView(chart);
-     chartView->setRenderHint(QPainter::Antialiasing);
+    chartView->setRenderHint(QPainter::Antialiasing);
 
-     ui->groupBox_2->layout()->addWidget(chartView);
+    ui->groupBox_2->layout()->addWidget(chartView);
+    ui->groupBox_2->hide();
+
+    QDate cd = QDate::currentDate();
+    QDate ed = cd.addYears(-10);
+    QList<QTreeWidgetItem *> years;
+
+    int curYearI = 0;
+    int curMothI = -1;
+    QTreeWidgetItem *curYear = NULL;
+    QTreeWidgetItem *curMonth = NULL;
+
+    while(cd >= ed)
+    {
+        if(cd.year() != curYearI)
+        {
+            curYear->addChild(curMonth);
+            curMothI = cd.month();
+            curMonth = new QTreeWidgetItem(static_cast<QTreeWidget *>(nullptr), QStringList(cd.toString("MMMM")));
+            ui->calendarWidget->addTopLevelItem(curYear);
+            curYearI = cd.year();
+            curYear = new QTreeWidgetItem(static_cast<QTreeWidget *>(nullptr), QStringList(QString::number(curYearI)));
+        }
+
+        if(cd.month() != curMothI)
+        {
+            curYear->addChild(curMonth);
+            curMothI = cd.month();
+            curMonth = new QTreeWidgetItem(static_cast<QTreeWidget *>(nullptr), QStringList(cd.toString("MMMM")));
+        }
+
+        curMonth->addChild(new QTreeWidgetItem(static_cast<QTreeWidget *>(nullptr), QStringList(cd.toString(Qt::LocaleDate))));
+
+        cd = cd.addDays(-1);
+    }
 
 
-     QDate cd = QDate::currentDate();
-     QDate ed = cd.addYears(-10);
-     QList<QTreeWidgetItem *> years;
+    QString addin_path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QDir dir(addin_path);
+    if (!dir.exists())
+        dir.mkpath(addin_path);
+    if (!dir.exists("addins"))
+        dir.mkdir("addins");
 
-     int curYearI = 0;
-     int curMothI = -1;
-     QTreeWidgetItem *curYear = NULL;
-     QTreeWidgetItem *curMonth = NULL;
+    dir.cd("addins");
+    addin_path = dir.absoluteFilePath("settings.ini");
+    QSettings *settings = new QSettings(addin_path,QSettings::IniFormat);
+    QString settingsPath = settings->value("settings/path").value<QString>();
 
-     while(cd >= ed)
-     {
-         if(cd.year() != curYearI)
-         {
-             curYear->addChild(curMonth);
-             curMothI = cd.month();
-             curMonth = new QTreeWidgetItem(static_cast<QTreeWidget *>(nullptr), QStringList(cd.toString("MMMM")));
-             ui->calendarWidget->addTopLevelItem(curYear);
-             curYearI = cd.year();
-             curYear = new QTreeWidgetItem(static_cast<QTreeWidget *>(nullptr), QStringList(QString::number(curYearI)));
-         }
+    QString logsPath;
 
-         if(cd.month() != curMothI)
-         {
-             curYear->addChild(curMonth);
-             curMothI = cd.month();
-             curMonth = new QTreeWidgetItem(static_cast<QTreeWidget *>(nullptr), QStringList(cd.toString("MMMM")));
-         }
+    if(settingsPath != "")
+    {
+        settings = new QSettings(settingsPath,QSettings::IniFormat);
+        logsPath = settings->value("settings/savePath").value<QString>();
+    }
 
-         curMonth->addChild(new QTreeWidgetItem(static_cast<QTreeWidget *>(nullptr), QStringList(cd.toString(Qt::LocaleDate))));
+    QDir logsDirectory(logsPath);
+    QStringList files = logsDirectory.entryList();
 
-         cd = cd.addDays(-1);
-     }
-
-
-
+    foreach(QString info, files)
+    {
+        if(info == "." || info == "..") { continue; }
+        ui->listWidget->addItem(info);
+    }
 }
 
 void MainWindow::addTreeRoot(QString name, QString description)
@@ -128,5 +158,12 @@ void MainWindow::on_cancelSearch_released()
 {
 
     ui->searchField->clear();
+
+}
+
+void MainWindow::on_listWidget_itemDoubleClicked(QListWidgetItem *item)
+{
+
+    ui->groupBox_2->show();
 
 }

@@ -1,6 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <QListWidget>
 #include <QMainWindow>
 #include <QTreeWidgetItem>
 
@@ -28,6 +29,8 @@ private slots:
     void on_SearchButton_released();
 
     void on_cancelSearch_released();
+
+    void on_listWidget_itemDoubleClicked(QListWidgetItem *item);
 
 private:
     Ui::MainWindow *ui;
