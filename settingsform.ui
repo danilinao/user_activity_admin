@@ -94,7 +94,14 @@
     <widget class="QLineEdit" name="settingsPath"/>
    </item>
    <item row="5" column="4">
-    <widget class="QTimeEdit" name="saveInterval"/>
+    <widget class="QTimeEdit" name="saveInterval">
+     <property name="currentSection">
+      <enum>QDateTimeEdit::SecondSection</enum>
+     </property>
+     <property name="displayFormat">
+      <string>hh:mm:ss</string>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
